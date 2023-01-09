@@ -36,6 +36,8 @@ type TemplateOptions struct {
 	SkipCleanup bool
 	// Propagate '--post-renderer' to helmv3 template and helm install
 	PostRenderer string
+
+  Cache bool
 }
 
 // NewTemplateOptions creates a new Apply
@@ -129,4 +131,9 @@ func (t *TemplateImpl) Values() []string {
 // PostRenderer returns the PostRenderer.
 func (t *TemplateImpl) PostRenderer() string {
 	return t.TemplateOptions.PostRenderer
+}
+
+// Cache returns the Cache
+func (t *TemplateImpl) Cache() bool {
+	return t.TemplateOptions.Cache
 }

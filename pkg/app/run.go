@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/helmfile/helmfile/pkg/argparser"
+	"github.com/helmfile/helmfile/pkg/remote"
 	"github.com/helmfile/helmfile/pkg/helmexec"
 	"github.com/helmfile/helmfile/pkg/state"
 )
@@ -47,8 +48,11 @@ func (r *Run) withPreparedCharts(helmfileCommand string, opts state.ChartPrepare
 			return err
 		}
 	}
-
-	// Create tmp directory and bail immediately if it fails
+ if opts.Cache{
+  cacheHome := remote.CacheDir()
+	opts.OutputDir = fmt.Sprintf("%s/repos",cacheHome)	
+  }
+  // Create tmp directory and bail immediately if it fails
 	var dir string
 	if len(opts.OutputDir) == 0 {
 		tempDir, err := os.MkdirTemp("", "helmfile*")
@@ -69,7 +73,6 @@ func (r *Run) withPreparedCharts(helmfileCommand string, opts state.ChartPrepare
 	}
 
 	concurrency := opts.Concurrency
-
 	releaseToChart, errs := r.state.PrepareCharts(r.helm, dir, concurrency, helmfileCommand, opts)
 
 	if len(errs) > 0 {

@@ -1033,6 +1033,7 @@ type ChartPrepareOptions struct {
 	OutputDirTemplate      string
 	IncludeTransitiveNeeds bool
 	Concurrency            int
+  Cache                  bool
 }
 
 type chartPrepareResult struct {
@@ -1145,7 +1146,6 @@ func (st *HelmState) PrepareCharts(helm helmexec.Interface, dir string, concurre
 				}
 
 				chartName := release.Chart
-
 				chartPath, err := st.downloadChartWithGoGetter(release)
 				if err != nil {
 					results <- &chartPrepareResult{err: fmt.Errorf("release %q: %w", release.Name, err)}
@@ -1223,6 +1223,7 @@ func (st *HelmState) PrepareCharts(helm helmexec.Interface, dir string, concurre
 					// explicitly skipped.
 					buildDeps = !skipDeps
 				} else if normalizedChart := normalizeChart(st.basePath, chartPath); st.fs.DirectoryExistsAt(normalizedChart) {
+
 					// At this point, we are sure that chartPath is a local directory containing either:
 					// - A remote chart fetched by go-getter or
 					// - A local chart
@@ -1262,6 +1263,7 @@ func (st *HelmState) PrepareCharts(helm helmexec.Interface, dir string, concurre
 					//    For helm 2, we `helm fetch` with the version flags and call `helm template`
 					//    WITHOUT the version flags.
 				} else {
+
 					chartPath, err = generateChartPath(chartName, dir, release, opts.OutputDirTemplate)
 					if err != nil {
 						results <- &chartPrepareResult{err: err}
@@ -1269,6 +1271,7 @@ func (st *HelmState) PrepareCharts(helm helmexec.Interface, dir string, concurre
 					}
 
 					// only fetch chart if it is not already fetched
+          
 					if _, err := os.Stat(chartPath); os.IsNotExist(err) {
 						fetchFlags := st.chartVersionFlags(release)
 						fetchFlags = append(fetchFlags, "--untar", "--untardir", chartPath)
@@ -3400,27 +3403,26 @@ func (st *HelmState) getOCIChart(release *ReleaseSpec, tempDir string, helm helm
 		tempDir,
 	}
 
-	if release.Namespace != "" {
-		pathElems = append(pathElems, release.Namespace)
-	}
-
 	if release.KubeContext != "" {
 		pathElems = append(pathElems, release.KubeContext)
 	}
-
-	pathElems = append(pathElems, release.Name, chartName, chartVersion)
+	pathElems = append(pathElems, strings.Split(release.Chart,"/")[0],chartName, chartVersion)
 
 	chartPath := path.Join(pathElems...)
 
-	err := helm.ChartPull(qualifiedChartName, chartPath)
-	if err != nil {
-		return nil, err
-	}
-	err = helm.ChartExport(qualifiedChartName, chartPath)
-	if err != nil {
-		return nil, err
-	}
+  if _, err := os.Stat(chartPath); os.IsNotExist(err) {
+    fmt.Println("no cache")
+	  err := helm.ChartPull(qualifiedChartName, chartPath)
+	  if err != nil {
+		  return nil, err
+	  }
+    err = helm.ChartExport(qualifiedChartName, chartPath)
+	  if err != nil {
+		  return nil, err
+	  }
+  }
 
+  fmt.Println("cache hit")
 	fullChartPath, err := findChartDirectory(chartPath)
 	if err != nil {
 		return nil, err
