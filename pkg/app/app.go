@@ -226,6 +226,7 @@ func (a *App) Diff(c DiffConfigProvider) error {
 
 func (a *App) Template(c TemplateConfigProvider) error {
 	return a.ForEachState(func(run *Run) (ok bool, errs []error) {
+    
 		includeCRDs := c.IncludeCRDs()
 
 		// Live output should never be enabled for the "template" subcommand to avoid breaking `helmfile template | kubectl apply -f -`
@@ -242,6 +243,7 @@ func (a *App) Template(c TemplateConfigProvider) error {
 			Validate:               c.Validate(),
 			Concurrency:            c.Concurrency(),
 			IncludeTransitiveNeeds: c.IncludeNeeds(),
+      Cache:                  c.Cache(),
 		}, func() {
 			ok, errs = a.template(run, c)
 		})

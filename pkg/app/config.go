@@ -199,6 +199,7 @@ type TemplateConfigProvider interface {
 	SkipTests() bool
 	OutputDir() string
 	IncludeCRDs() bool
+  Cache() bool
 
 	DAGConfig
 
